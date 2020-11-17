@@ -164,34 +164,34 @@ def getData_from_Off(filename, opt2sample=None, normalize_PointSet=False):
             coord2points.append(coord2point)
         else:
             break
-    f.close()
+    # f.close()
 
     num2points = 2048  # we need sample 2048 points from current point cloud
     # if the numbers of points are less than 2048, extent the point set
     if len(coord2points) < num2points:
-        # print("none")
-        return None
-    coord2points = np.array(coord2points)
-    xyz = coord2points.copy()
-    if 'farthest_point_sample'== str.lower(opt2sample):
-        points_sample = farthest_point_sample(xyz, num2points).astype(np.int64)
-    elif 'random_point_sample'== str.lower(opt2sample):
-        points_sample = random_point_sample(xyz, num2points)
+        return []
     else:
-        points_sample = uniform_point_sample(xyz, num2points)
-    print('points_sample:', points_sample)
+        coord2points = np.array(coord2points)
+        xyz = coord2points.copy()
+        if 'farthest_point_sample'== str.lower(opt2sample):
+            points_sample = farthest_point_sample(xyz, num2points).astype(np.int64)
+        elif 'random_point_sample'== str.lower(opt2sample):
+            points_sample = random_point_sample(xyz, num2points)
+        else:
+            points_sample = uniform_point_sample(xyz, num2points)
+        # print('points_sample:', points_sample)
 
-    centroid = np.mean(points_sample, axis=0)
-    points_unit_sphere = points_sample - centroid
-    if (normalize_PointSet):
-        # centroid = np.mean(points_sample, axis=0)
-        # points_unit_sphere = points_sample - centroid
-        furthest_distance = np.max(np.sqrt(np.sum(abs(points_unit_sphere) ** 2, axis=-1)))
-        points_unit_sphere /= furthest_distance
-    return points_unit_sphere
+        centroid = np.mean(points_sample, axis=0)
+        points_unit_sphere = points_sample - centroid
+        if (normalize_PointSet):
+            # centroid = np.mean(points_sample, axis=0)
+            # points_unit_sphere = points_sample - centroid
+            furthest_distance = np.max(np.sqrt(np.sum(abs(points_unit_sphere) ** 2, axis=-1)))
+            points_unit_sphere /= furthest_distance
+        return points_unit_sphere
 
 
-def make_trian_Dataset(name2originData=None, sample_opt=None):
+def make_trian_Dataset(name2originData=None, sample_opt=None, normalize=None):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     print('Base_dir:', BASE_DIR)
     print('\n')
@@ -218,15 +218,15 @@ def make_trian_Dataset(name2originData=None, sample_opt=None):
         print(data_dir)
         if os.path.exists(data_dir) != True:
             break
-        filesName_list = getFiles_name(data_dir)  # 得到文件夹下的所有文件的名称
+        filesName_list = getFiles_name(data_dir)                    # 得到文件夹下的所有文件的名称
         for fileName in filesName_list:
             if str.lower(fileName) == '.ds_store':
                 continue
             data_filename = os.path.join(data_dir, fileName)
-            # data_filename = os.path.join(data_dir, fileName)
             print(data_filename)
-            current_data = getData_from_Off(data_filename, opt2sample=sample_opt, normalize_PointSet=True)
-            if current_data == None:
+            current_data = getData_from_Off(data_filename, opt2sample=sample_opt, normalize_PointSet=normalize)
+            if len(current_data) == 0:
+                print('current_data:', current_data)
                 continue
             label_list2class.append(current_label)
             traindata_list2class.append(current_data)
@@ -253,7 +253,7 @@ def make_trian_Dataset(name2originData=None, sample_opt=None):
             label_list2class.clear()
 
 
-def make_test_Dataset(name2originData=None, sample_opt=None):
+def make_test_Dataset(name2originData=None, sample_opt=None, normalize=None):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     print('Base_dir:', BASE_DIR)
     print('\n')
@@ -284,8 +284,9 @@ def make_test_Dataset(name2originData=None, sample_opt=None):
                 continue
             data_filename = os.path.join(data_dir, fileName)
             print(data_filename)
-            current_data = getData_from_Off(data_filename, opt2sample=sample_opt, normalize_PointSet=True)
-            if current_data == None:
+            current_data = getData_from_Off(data_filename, opt2sample=sample_opt, normalize_PointSet=normalize)
+            if len(current_data) == 0:
+                print('current_data:', current_data)
                 continue
             label_list2class.append(current_label)
             testdata_list2class.append(current_data)
@@ -309,7 +310,9 @@ if __name__ == "__main__":
     # print('data2points:', data2points)
 
     dataName = 'ModelNet10'
-    option2sample = 'random_point_sample'
-    make_trian_Dataset(name2originData=dataName, sample_opt=option2sample)
-    make_test_Dataset(name2originData=dataName, sample_opt=option2sample)
+    # option2sample = 'random_point_sample'
+    option2sample = 'farthest_point_sample'
+    opt2normalize = False
+    make_trian_Dataset(name2originData=dataName, sample_opt=option2sample, normalize=opt2normalize)
+    make_test_Dataset(name2originData=dataName, sample_opt=option2sample, normalize=opt2normalize)
 
